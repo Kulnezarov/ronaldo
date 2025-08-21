@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Для Жаным</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: radial-gradient(circle at center, #000000, #660000 90%);
+    font-family: sans-serif;
+    color: white;
+    min-height: 100vh;
+    overflow-x: hidden; /* Запрещаем горизонтальную прокрутку */
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Выравниваем контент по верху для скролла */
+    text-align: center;
+    padding: 8vh 15px; /* Добавляем отступы, чтобы контент не прилипал к краям */
+    box-sizing: border-box;
+  }
+  @keyframes pulse {
+    0% { opacity: 0.8; }
+    50% { opacity: 1; }
+    100% { opacity: 0.8; }
+  }
+  .main-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center; /* Центрируем контент на главном экране */
+    z-index: 2;
+    /* оставляем кнопку на месте: ничего не меняем по отступам контейнера */
+    width: 100%;
+    max-width: 90%;
+    box-sizing: border-box;
+  }
+  h1 {
+    font-size: clamp(24px, 7vw, 42px);
+    color: #ffffff;
+    text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
+    animation: pulse 3s infinite ease-in-out;
+    margin: 0 0 10px 0;
+    will-change: transform;
+  }
+  p {
+    font-size: clamp(14px, 4vw, 20px);
+    color: #ffffff;
+    margin-bottom: 20px;
+    will-change: transform;
+  }
+  /* Поднимаем ТОЛЬКО текст на телефонах. Кнопку не трогаем. */
+  /* ИСПРАВЛЕНО: Теперь поднимаем весь блок для сохранения пропорций */
+  @media (max-width: 768px) {
+    .main-content { transform: translateY(-5vh); }
+  }
+  @keyframes fall {
+    to {
+      transform: translateY(105vh) rotate(30deg);
+      opacity: 0;
+    }
+  }
+  /* Кнопка письма остаётся ровно как была у тебя */
+  .center-button {
+    display: inline-block;
+    margin-top: 20px;
+    padding: clamp(20px, 6vw, 40px) clamp(30px, 10vw, 80px);
+    background: linear-gradient(to right, #ff4d4d, #ff8080);
+    color: white;
+    font-size: clamp(20px, 6vw, 48px);
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(255, 77, 77, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    white-space: nowrap;
+  }
+  .center-button:hover {
+    box-shadow: 0 6px 20px rgba(255, 77, 77, 0.8);
+    transform: scale(1.05);
+  }
+  .music-button {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.3);
+    color: white;
+    border: 2px solid white;
+    border-radius: 50%;
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 10000;
+    transition: background 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .music-button:hover {
+    background: rgba(255, 255, 255, 0.5);
+  }
+
+  /* --- Стили для новых экранов --- */
+  #page-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.5s ease-in-out;
+  }
+
+  .content-wrapper {
+    /* Убрали фон, чтобы все было на одном градиенте */
+    padding: 60px 20px 40px 20px; /* Добавили отступ сверху для кнопки "Назад" */
+    border-radius: 15px;
+    max-width: 100%; /* Ширина будет ограничена родителем */
+    width: 700px;
+    text-align: center;
+    position: relative; /* Для позиционирования кнопок */
+    box-sizing: border-box;
+    z-index: 2; /* Чтобы быть НАД падающими словами */
+  }
+
+  .content-wrapper h2 {
+    color: #ffc0cb; /* Розовый цвет для заголовков, хорошо виден на темном */
+    text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
+    margin-top: 0;
+    font-size: clamp(22px, 5vw, 28px);
+  }
+  .content-wrapper p {
+    color: #ffffff; /* Белый цвет для основного текста */
+    text-align: left; /* Выравниваем текст письма по левому краю для читаемости */
+    transform: none; /* Сбрасываем старые стили */
+    margin-bottom: 15px;
+  }
+
+  /* --- Стили для мини-игр и эффектов --- */
+  #game-board {
+    min-height: 300px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    perspective: 1000px;
+  }
+  .memory-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .memory-card {
+    width: clamp(50px, 15vw, 80px);
+    height: clamp(50px, 15vw, 80px);
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.6s;
+    cursor: pointer;
+  }
+  .memory-card.is-flipped {
+    transform: rotateY(180deg);
+  }
+  .card-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: clamp(24px, 10vw, 40px);
+    border-radius: 10px;
+  }
+  .card-front {
+    background: #ff8080;
+    color: white;
+  }
+  .card-back {
+    background: #ffc0cb;
+    color: #d14f4f;
+    transform: rotateY(180deg);
+  }
+  .heart-catcher {
+    width: 60px;
+    height: 60px;
+    font-size: 50px;
+    position: absolute;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .typing-cursor {
+    animation: pulse 0.7s infinite;
+  }
+  .quiz-question {
+    font-size: clamp(18px, 4vw, 22px);
+    margin-bottom: 20px;
+    color: white;
+  }
+  .quiz-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .quiz-option {
+    padding: 12px;
+    background: #ff8080;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s, opacity 0.3s;
+    font-size: 16px;
+  }
+  .quiz-option:hover:not(:disabled) {
+    background: #ff4d4d;
+  }
+  .quiz-option.correct { background: #4CAF50; }
+  .quiz-option.incorrect {
+    background: #f44336;
+    opacity: 0.7;
+  }
+  /* --- Новые стили для игр --- */
+  .balloon {
+    font-size: 40px;
+    position: absolute;
+    cursor: pointer;
+    transition: transform 0.2s;
+    user-select: none;
+  }
+  .balloon:hover { transform: scale(1.2); }
+
+  .tictactoe-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    width: clamp(210px, 80vw, 300px);
+    height: clamp(210px, 80vw, 300px);
+    gap: 10px;
+  }
+  .tictactoe-cell {
+    background: #ffc0cb;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: clamp(40px, 15vw, 60px);
+    cursor: pointer;
+    color: #d14f4f;
+    transition: background 0.3s;
+  }
+  .tictactoe-cell:hover:not(.filled) { background: #ffb5c1; }
+  .tictactoe-cell.filled { cursor: not-allowed; }
+
+  /* Стили для игры "Шифр Любви" */
+  .cipher-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+  }
+  .cipher-text {
+    font-size: clamp(24px, 8vw, 32px);
+    color: #ffc0cb;
+    letter-spacing: 5px;
+    font-weight: bold;
+  }
+  .cipher-input {
+    padding: 10px;
+    border-radius: 8px;
+    border: 2px solid #ff8080;
+    background: rgba(255,255,255,0.2);
+    color: white;
+    text-align: center;
+    font-size: 18px;
+    width: 80%;
+  }
+  .nav-button {
+    padding: 12px 24px;
+    background: #d14f4f;
+    color: white;
+    text-decoration: none;
+    border: none;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .nav-button:hover {
+    background: #a13f3f;
+    transform: scale(1.05);
+  }
+  .nav-back {
+    position: absolute;
+    top: 10px; /* Подняли кнопку еще выше */
+    left: 10px;
+    z-index: 3; /* Кнопка назад всегда сверху */
+  }
+  .nav-next {
+    margin-top: 20px;
+  }
+  .game-controls {
+    margin-top: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+  }
+  .video-grid video {
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    mix-blend-mode: screen; /* Магия смешивания с фоном */
+    filter: brightness(1.1); /* Делаем видео чуть ярче для лучшего эффекта */
+  }
+  .word {
+    position: absolute;
+    font-weight: bold;
+    text-shadow: 2px 2px 6px rgba(0,0,0,0.8);
+    z-index: 1;
+    top: -50px; /* Начальная позиция за экраном */
+    animation: fall linear;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+<!-- Этот контейнер будет менять своё содержимое -->
+<main id="page-container"></main>
+
+<button class="music-button" id="musicToggle">🔇</button>
+
+<audio id="backgroundMusic" loop>
+  <source src="lo.mp3" type="audio/mpeg">
+  Ваш браузер не поддерживает элемент audio.
+</audio>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+  // --- ЭЛЕМЕНТЫ И НАСТРОЙКИ ---
+  const pageContainer = document.getElementById('page-container');
+  const musicButton = document.getElementById('musicToggle');
+  const backgroundMusic = document.getElementById('backgroundMusic');
+  let isMusicPlaying = false;
+  let userHasInteracted = false;
+
+  // --- ШАБЛОНЫ ЭКРАНОВ ---
+  const screens = {
+    home: `
+      <div class="main-content">
+        <h1>Моё сердце бьётся только для тебя 💖</h1>
+        <p>Это лишь маленькая часть моих чувств...</p>
+        <button class="center-button" data-target="letter">Открыть 💌</button>
+      </div>`,
+    letter: `
+      <div class="content-wrapper">
+        <button class="nav-button nav-back" data-target="home">Назад</button>
+        <h2 id="letter-title">Моей самой любимой...</h2>
+        <p class="letter-text">Любимая, когда я думаю о тебе, мир словно замедляется и становится тише. В каждую секунду моей повседневности ты приносишь свет, тепло и спокойствие. Я ловлю себя на том, что улыбаюсь просто от мысли о твоём голосе и твоём взгляде. Ты — мой самый любимый человек, моя опора и вдохновение. С тобой хочется делиться каждым днём, каждым маленьким открытием и каждой мечтой.</p>
+        <p class="letter-text">Я люблю, как ты смеёшься, как искренне радуешься простым вещам и как умеешь замечать красоту там, где другие проходят мимо. Мне дорого всё, что связано с тобой: твои привычки, твои маленькие странности, твои неожиданные вопросы и тёплые объятия. Когда мы рядом, мне кажется, что любое испытание становится легче, а любая цель — достижимее. Ты даёшь мне силы верить в лучшее и становиться лучше для нас двоих.</p>
+        <p class="letter-text">Я часто думаю о нашем будущем. Я представляю уютные вечера, длинные разговоры и путешествия, в которых мы будем открывать новые места и новые стороны друг друга. Хочу беречь тебя, поддерживать и всегда быть тем, на кого можно положиться. Я благодарен судьбе за встречу с тобой и за всё, чему ты меня учишь — любить, слышать и быть настоящим. Пусть это письмо станет маленьким напоминанием: моё сердце выбрало тебя однажды — и выбирает каждый день снова.</p>
+        <p class="letter-text">Спасибо тебе за твою доброту, за твою нежность и за то, что ты есть. Я люблю тебя так, как раньше не умел — глубоко, спокойно и уверенно. И пусть впереди у нас ещё тысячи историй, больших и маленьких, я хочу прожить их все вместе с тобой. Обнимаю тебя мысленно прямо сейчас и шепчу: ты — моё чудо, моя радость и мой дом.</p>
+        <button class="nav-button nav-next" data-target="videos">Дальше</button>
+      </div>`,
+    videos: `
+      <div class="content-wrapper">
+        <button class="nav-button nav-back" data-target="letter">Назад</button>
+        <h2>Наши лучшие моменты</h2>
+        <div class="video-grid">
+          ${[1, 2, 3, 5, 6, 7, 8].map(num => `<video src="${num}.mp4" autoplay loop muted playsinline></video>`).join('')}
+        </div>
+        <button class="nav-button nav-next" data-target="games">Поиграем?</button>
+      </div>`,
+    games: `
+      <div class="content-wrapper">
+        <button class="nav-button nav-back" data-target="videos">Назад</button>
+        <h2 id="game-title">Время для игр!</h2>
+        <div id="game-board"></div>
+        <p id="game-message" style="min-height: 24px; margin-top: 15px;"></p>
+        <div class="game-controls"><button class="nav-button" data-action="new-game">Другая игра</button><button class="nav-button" data-action="main-menu">На главную</button></div>
+      </div>`
+  };
+
+  // --- ФУНКЦИЯ СМЕНЫ ЭКРАНА ---
+  async function showScreen(screenName) {
+    // Управляем выравниванием для разных экранов
+    if (screenName === 'home') {
+      document.body.style.alignItems = 'center';
+    } else if (screenName === 'games') {
+      document.body.style.alignItems = 'flex-start';
+      // Задержка нужна, чтобы DOM успел обновиться
+      setTimeout(gameManager.startRandomGame, 100);
+    } else if (screenName === 'letter') {
+      document.body.style.alignItems = 'flex-start';
+    } else {
+      document.body.style.alignItems = 'flex-start';
+    }
+
+    pageContainer.style.opacity = 0;
+    await new Promise(resolve => setTimeout(resolve, 500)); // Ждем завершения анимации
+    pageContainer.innerHTML = screens[screenName] || screens['home'];
+    pageContainer.style.opacity = 1;
+
+    // Запускаем эффекты после отрисовки
+    if (screenName === 'letter') {
+      const paragraphs = pageContainer.querySelectorAll('.letter-text');
+      const texts = Array.from(paragraphs).map(p => p.textContent);
+      paragraphs.forEach(p => p.textContent = ''); // Очищаем
+      
+      // Запускаем печать последовательно для всех абзацев
+      for (let i = 0; i < paragraphs.length; i++) {
+          await typewriter(paragraphs[i], texts[i]);
+      }
+    }
+  }
+
+  // --- УПРАВЛЕНИЕ НАВИГАЦИЕЙ ---
+  pageContainer.addEventListener('click', (event) => {
+    const targetButton = event.target.closest('[data-target]');
+    const actionButton = event.target.closest('[data-action]');
+    if (actionButton) {
+        const action = actionButton.dataset.action;
+        if (action === 'new-game') gameManager.startRandomGame();
+        if (action === 'play-again') gameManager.restartCurrentGame();
+        if (action === 'main-menu') showScreen('home');
+    } else if (targetButton) {
+      const screenName = targetButton.dataset.target;
+      showScreen(screenName);
+    }
+  });
+
+  // --- УПРАВЛЕНИЕ МУЗЫКОЙ ---
+  function toggleMusic() {
+    if (isMusicPlaying) {
+      backgroundMusic.pause();
+      musicButton.textContent = "🔇";
+    } else {
+      backgroundMusic.play().catch(e => console.log("Автозапуск музыки не удался."));
+      musicButton.textContent = "🎶";
+    }
+    isMusicPlaying = !isMusicPlaying;
+  }
+  musicButton.addEventListener('click', toggleMusic);
+  document.body.addEventListener('click', () => {
+    if (!userHasInteracted) {
+      userHasInteracted = true;
+      if (!isMusicPlaying) toggleMusic();
+    }
+  }, { once: true });
+
+  // --- ЭФФЕКТ ПЕЧАТНОЙ МАШИНКИ ---
+  function typewriter(element, text, speed = 50) {
+    return new Promise(resolve => {
+      let i = 0;
+      const cursor = document.createElement('span');
+      cursor.className = 'typing-cursor';
+      cursor.textContent = '|';
+      element.appendChild(cursor);
+
+      function type() {
+        if (i < text.length) {
+          cursor.before(text.charAt(i));
+          i++;
+          setTimeout(type, speed);
+        } else {
+          cursor.remove();
+          resolve(); // Сообщаем, что печать закончена
+        }
+      }
+      type();
+    });
+  }
+
+  // --- ЛОГИКА МИНИ-ИГР ---
+  const gameManager = {
+  currentGameIndex: -1,
+  _cleanups: [],
+
+  // служебные: очищаем всё, что могло остаться от предыдущей игры
+  _resetBoard(title) {
+    const board = document.getElementById('game-board');
+    const msg   = document.getElementById('game-message');
+    document.getElementById('game-title').textContent = title || '';
+    msg.textContent = '';
+    board.innerHTML = '';
+    board.style.position = 'relative';
+    board.style.overflow = 'hidden';
+    board.style.userSelect = 'none';
+    // выполнить все функции очистки (снятие интервалов/слушателей/raf)
+    this._cleanups.forEach(fn => { try { fn(); } catch(_){} });
+    this._cleanups = [];
+  },
+
+  _onCleanup(fn) { this._cleanups.push(fn); },
+
+  games: [
+    /* ===================== 1) ЛОВИ ПОДАРКИ 🎁 ===================== */
+    {
+      name: "Лови подарки",
+      init: function () {
+        gameManager._resetBoard(this.name);
+        const board = document.getElementById('game-board');
+        const msg   = document.getElementById('game-message');
+
+        // корзинка (внизу) и счёт
+        const basket = document.createElement('div');
+        basket.textContent = '🧺';
+        Object.assign(basket.style, {
+          position:'absolute', bottom:'8px', left:'50%', transform:'translateX(-50%)',
+          fontSize:'32px', lineHeight:'1'
+        });
+        board.appendChild(basket);
+
+        let score = 0;
+        const target = 7;
+        msg.textContent = `Поймай ${target} подарков! 0/${target}`;
+
+        // управление корзинкой — мышь и тач
+        const moveBasket = (clientX) => {
+          const r = board.getBoundingClientRect();
+          const x = Math.min(Math.max(clientX - r.left, 0), r.width);
+          basket.style.left = `${x}px`;
+          basket.style.transform = 'translateX(-50%)';
+        };
+        const onMouseMove = (e)=> moveBasket(e.clientX);
+        const onTouchMove = (e)=> { if (e.touches[0]) moveBasket(e.touches[0].clientX); };
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('touchmove', onTouchMove, {passive:true});
+        gameManager._onCleanup(()=> {
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('touchmove', onTouchMove);
+        });
+
+        // падение подарков
+        let running = true;
+        const rafIds = new Set();
+        const spawnGift = () => {
+          if (!running) return;
+          const gift = document.createElement('div');
+          gift.textContent = Math.random()<0.85 ? '🎁' : '💖';
+          gift.style.position='absolute';
+          gift.style.top='-40px';
+          const br = board.getBoundingClientRect();
+          const x = Math.random() * (br.width - 32);
+          gift.style.left = `${x}px`;
+          gift.style.fontSize = '28px';
+          board.appendChild(gift);
+
+          let y = -40;
+          const speed = 1.2 + Math.random()*2.2;
+          const fall = () => {
+            if (!running) return;
+            y += speed;
+            gift.style.top = `${y}px`;
+
+            const gr = gift.getBoundingClientRect();
+            const brd = board.getBoundingClientRect();
+            const bas = basket.getBoundingClientRect();
+
+            // касание корзинки
+            const intersects = !(gr.right < bas.left || gr.left > bas.right || gr.bottom < bas.top || gr.top > bas.bottom);
+            if (intersects) {
+              score++;
+              msg.textContent = `Поймай ${target} подарков! ${score}/${target}`;
+              gift.remove();
+              if (score >= target) {
+                running = false;
+                msg.textContent = `Умничка! Поймано ${score}/${target} ❤️`;
+              }
+              return;
+            }
+            // улетел ниже
+            if (y > brd.height + 40) {
+              gift.remove();
+              return;
+            }
+            const id = requestAnimationFrame(fall);
+            rafIds.add(id);
+          };
+          const id = requestAnimationFrame(fall);
+          rafIds.add(id);
+        };
+
+        const spawner = setInterval(spawnGift, 600);
+        gameManager._onCleanup(()=> { clearInterval(spawner); running=false; rafIds.forEach(cancelAnimationFrame); });
+      }
+    },
+
+    /* ===================== 2) ПОЙМАЙ КОТИКА 🐱 ===================== */
+    {
+      name: "Поймай котика",
+      init: function () {
+        gameManager._resetBoard(this.name);
+        const board = document.getElementById('game-board');
+        const msg   = document.getElementById('game-message');
+        msg.textContent = 'Поймай котика 5 раз!';
+
+        const cat = document.createElement('div');
+        cat.textContent = '🐱';
+        Object.assign(cat.style, {
+          position:'absolute', fontSize:'40px', left:'50px', top:'50px', cursor:'pointer'
+        });
+        board.appendChild(cat);
+
+        let caught = 0;
+        let vx = 2 + Math.random()*2;
+        let vy = 1.5 + Math.random()*2;
+        const rafIds = new Set();
+        const move = () => {
+          const br = board.getBoundingClientRect();
+          const x = (parseFloat(cat.style.left) || 0) + vx;
+          const y = (parseFloat(cat.style.top)  || 0) + vy;
+          if (x < 0 || x > br.width - 40) vx *= -1;
+          if (y < 0 || y > br.height - 40) vy *= -1;
+          cat.style.left = `${Math.min(Math.max(x,0), br.width - 40)}px`;
+          cat.style.top  = `${Math.min(Math.max(y,0), br.height - 40)}px`;
+          const id = requestAnimationFrame(move);
+          rafIds.add(id);
+        };
+        const id = requestAnimationFrame(move);
+        rafIds.add(id);
+
+        const onClick = () => {
+          caught++;
+          msg.textContent = `Поймано: ${caught}/5`;
+          // телепорт после клика
+          const br = board.getBoundingClientRect();
+          cat.style.left = `${Math.random()*(br.width-40)}px`;
+          cat.style.top  = `${Math.random()*(br.height-40)}px`;
+          if (caught >= 5) {
+            msg.textContent = 'Ты супер! Котик пойман! 🥳';
+            cat.style.pointerEvents = 'none';
+          }
+        };
+        cat.addEventListener('click', onClick);
+        gameManager._onCleanup(()=> { rafIds.forEach(cancelAnimationFrame); cat.removeEventListener('click', onClick); });
+      }
+    },
+
+    /* ===================== 3) КЛИК-ТАЙМЕР ⏱️ ===================== */
+    {
+      name: "Клик-таймер",
+      init: function () {
+        gameManager._resetBoard(this.name);
+        const board = document.getElementById('game-board');
+        const msg   = document.getElementById('game-message');
+
+        let timeLeft = 5.0;
+        let clicks = 0;
+
+        const btn = document.createElement('button');
+        btn.textContent = 'Жми как можно больше!';
+        Object.assign(btn.style, {
+          fontSize:'18px', padding:'12px 16px', borderRadius:'10px', cursor:'pointer'
+        });
+        board.appendChild(btn);
+
+        msg.textContent = `Время: ${timeLeft.toFixed(1)} сек | Клики: ${clicks}`;
+
+        const timer = setInterval(() => {
+          timeLeft = Math.max(0, timeLeft - 0.1);
+          msg.textContent = `Время: ${timeLeft.toFixed(1)} сек | Клики: ${clicks}`;
+          if (timeLeft <= 0) {
+            clearInterval(timer);
+            btn.disabled = true;
+            msg.textContent = `Готово! Клики: ${clicks} ${clicks>=30 ? '🔥 Чемпион!' : '👏 Отличный результат!'}`;
+          }
+        }, 100);
+
+        const onClick = () => { clicks++; };
+        btn.addEventListener('click', onClick);
+        gameManager._onCleanup(()=> { clearInterval(timer); btn.removeEventListener('click', onClick); });
+      }
+    },
+
+    /* ===================== 4) ПУЗЫРЬКИ 🫧 ===================== */
+    {
+      name: "Пузырьки",
+      init: function () {
+        gameManager._resetBoard(this.name);
+        const board = document.getElementById('game-board');
+        const msg   = document.getElementById('game-message');
+
+        let popped = 0;
+        const target = 12;
+        msg.textContent = `Лопни ${target} пузырьков! 0/${target}`;
+
+        const rafIds = new Set();
+        let running = true;
+
+        const spawn = () => {
+          if (!running) return;
+          const b = document.createElement('div');
+          b.textContent = '🫧';
+          Object.assign(b.style, {
+            position:'absolute', fontSize:'28px', bottom:'-40px',
+            left: Math.random()* (board.clientWidth - 28) + 'px', cursor:'pointer'
+          });
+          board.appendChild(b);
+
+          const onClick = () => {
+            if (!running) return;
+            popped++;
+            msg.textContent = `Лопни ${target} пузырьков! ${popped}/${target}`;
+            b.removeEventListener('click', onClick);
+            b.remove();
+            if (popped >= target) {
+              running = false;
+              msg.textContent = `Ура! ${popped}/${target} 💖`;
+            }
+          };
+          b.addEventListener('click', onClick);
+
+          let y = -40;
+          const speed = 1 + Math.random()*1.6;
+          const floatUp = () => {
+            if (!running) return;
+            y += speed;
+            b.style.bottom = `${y}px`;
+            if (parseFloat(b.style.bottom) > board.clientHeight + 50) {
+              b.removeEventListener('click', onClick);
+              b.remove();
+              return;
+            }
+            const id = requestAnimationFrame(floatUp);
+            rafIds.add(id);
+          };
+          const id = requestAnimationFrame(floatUp);
+          rafIds.add(id);
+        };
+
+        const spawner = setInterval(spawn, 350);
+        gameManager._onCleanup(()=> { running=false; clearInterval(spawner); rafIds.forEach(cancelAnimationFrame); });
+      }
+    },
+
+    /* ===================== 5) КАМЕНЬ-НОЖНИЦЫ-БУМАГА ✊✋✌️ ===================== */
+    {
+      name: "Камень-ножницы-бумага",
+      init: function () {
+        gameManager._resetBoard(this.name);
+        const board = document.getElementById('game-board');
+        const msg   = document.getElementById('game-message');
+
+        const options = [
+          {name:'Камень',  emoji:'✊'},
+          {name:'Ножницы', emoji:'✌️'},
+          {name:'Бумага',  emoji:'✋'}
+        ];
+        const wrap = document.createElement('div');
+        wrap.style.display = 'flex';
+        wrap.style.gap = '12px';
+        wrap.style.flexWrap = 'wrap';
+        wrap.style.justifyContent = 'center';
+
+        options.forEach((opt, idx)=>{
+          const btn = document.createElement('button');
+          btn.textContent = `${opt.emoji} ${opt.name}`;
+          Object.assign(btn.style, {fontSize:'18px', padding:'10px 14px', borderRadius:'10px', cursor:'pointer'});
+          btn.addEventListener('click', ()=>{
+            const cpu = Math.floor(Math.random()*3);
+            const you = idx;
+            const res = (you - cpu + 3) % 3; // 0 ничья, 1 победа, 2 поражение
+            const text = res===0 ? 'Ничья! 🤝' : res===1 ? 'Ты победила! 🏆' : 'Компьютер победил! 😉';
+            msg.textContent = `Ты: ${options[you].emoji} — Бот: ${options[cpu].emoji}. ${text}`;
+          });
+          wrap.appendChild(btn);
+        });
+
+        board.appendChild(wrap);
+        msg.textContent = 'Выбери свой знак!';
+      }
+    },
+
+    /* ===================== 6) СОБЕРИ СЛОВО "LOVE" ❤️ ===================== */
+    {
+      name: 'Собери слово "LOVE"',
+      init: function () {
+        gameManager._resetBoard(this.name);
+        const board = document.getElementById('game-board');
+        const msg   = document.getElementById('game-message');
+
+        const letters = ['L','O','V','E'];
+        const shuffled = letters.slice().sort(()=>Math.random()-0.5);
+
+        const targetBox = document.createElement('div');
+        targetBox.id = 'love-target';
+        Object.assign(targetBox.style, {
+          display:'flex', gap:'8px', justifyContent:'center', marginBottom:'10px',
+          fontSize:'28px', fontWeight:'800'
+        });
+        board.appendChild(targetBox);
+
+        const bank = document.createElement('div');
+        Object.assign(bank.style, {display:'flex', gap:'10px', justifyContent:'center', flexWrap:'wrap'});
+        board.appendChild(bank);
+
+        const slots = [];
+        for (let i=0;i<4;i++){
+          const slot = document.createElement('div');
+          Object.assign(slot.style, {
+            width:'48px', height:'48px', border:'2px dashed rgba(255,255,255,.35)',
+            borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center'
+          });
+          targetBox.appendChild(slot);
+          slots.push(slot);
+        }
+
+        shuffled.forEach(ch=>{
+          const b = document.createElement('button');
+          b.textContent = ch;
+          Object.assign(b.style, {fontSize:'22px', padding:'10px 14px', borderRadius:'10px', cursor:'pointer'});
+          b.addEventListener('click', ()=>{
+            const empty = slots.find(s => !s.textContent);
+            if (empty) {
+              empty.textContent = ch;
+              empty.style.borderColor = 'transparent';
+              b.remove();
+              const word = slots.map(s=>s.textContent||'').join('');
+              if (word === 'LOVE') msg.textContent = 'Идеально! LOVE собрано! 💖';
+            }
+          });
+          bank.appendChild(b);
+        });
+
+        msg.textContent = 'Нажимай буквы, чтобы заполнить слоты слева направо.';
+      }
+    },
+
+    /* ===================== 7) УБЕГАЮЩАЯ КНОПКА 🟦 ===================== */
+    {
+      name: "Поймай кнопку",
+      init: function () {
+        gameManager._resetBoard(this.name);
+        const board = document.getElementById('game-board');
+        const msg   = document.getElementById('game-message');
+
+        const btn = document.createElement('button');
+        btn.textContent = 'Поймай меня!';
+        Object.assign(btn.style, {
+          position:'absolute', left:'50%', top:'50%', transform:'translate(-50%,-50%)',
+          fontSize:'18px', padding:'10px 16px', borderRadius:'10px', cursor:'pointer'
+        });
+        board.appendChild(btn);
+
+        let wins = 0;
+        msg.textContent = 'Подведи курсор и кликни. Удачи!';
+
+        const moveAway = (x, y) => {
+          const br = board.getBoundingClientRect();
+          const bw = btn.offsetWidth, bh = btn.offsetHeight;
+          // новое положение — случайно, но внутри борда
+          const nx = Math.min(Math.max(Math.random()*(br.width - bw), 0), br.width - bw);
+          const ny = Math.min(Math.max(Math.random()*(br.height - bh), 0), br.height - bh);
+          btn.style.left = nx + 'px';
+          btn.style.top  = ny + 'px';
+          btn.style.transform = 'translate(0,0)';
+        };
+
+        const onMouseEnter = ()=> moveAway();
+        const onTouchStart = ()=> moveAway();
+
+        btn.addEventListener('mouseenter', onMouseEnter);
+        btn.addEventListener('touchstart', onTouchStart, {passive:true});
+
+        const onClick = ()=>{
+          wins++;
+          msg.textContent = wins>=3 ? 'Поймана! Ты непобедима! 🎉' : `Есть! Ещё разок: ${wins}/3`;
+          if (wins>=3) {
+            btn.disabled = true;
+            btn.style.opacity = '0.7';
+          } else {
+            moveAway();
+          }
+        };
+        btn.addEventListener('click', onClick);
+
+        gameManager._onCleanup(()=> {
+          btn.removeEventListener('mouseenter', onMouseEnter);
+          btn.removeEventListener('touchstart', onTouchStart);
+          btn.removeEventListener('click', onClick);
+        });
+      }
+    }
+  ],
+
+  startRandomGame: function () {
+    let newIndex;
+    do { newIndex = Math.floor(Math.random() * this.games.length); }
+    while (this.games.length > 1 && newIndex === this.currentGameIndex);
+    this.currentGameIndex = newIndex;
+    this.games[this.currentGameIndex].init();
+  },
+
+  restartCurrentGame: function () {
+    if (this.currentGameIndex !== -1) this.games[this.currentGameIndex].init();
+  }
+};
+
+  // --- АНИМАЦИЯ ПАДАЮЩИХ СЛОВ (ОПТИМИЗИРОВАНА) ---
+  function spawnWord() {
+    const word = document.createElement("div");
+    word.className = "word";
+    const messages = ["Я люблю тебя", "❤️"];
+    word.textContent = messages[Math.floor(Math.random() * messages.length)];
+    const colors = ['#ffdddd', '#ffb6c1', '#ffc0cb', '#ffe4e1'];
+    word.style.color = colors[Math.floor(Math.random() * colors.length)];
+    word.style.left = Math.random() * window.innerWidth + "px";
+    word.style.fontSize = (18 + Math.random() * 8) + "px";
+    word.style.animationDuration = (6 + Math.random() * 6) + 's'; // Чуть медленнее для лучшего эффекта
+    word.style.opacity = 0.5 + Math.random() * 0.5;
+    document.body.appendChild(word);
+    word.addEventListener('animationend', () => word.remove());
+  }
+  const spawnRate = window.innerWidth < 768 ? 500 : 150;
+  setInterval(spawnWord, spawnRate);
+
+  // --- ЗАПУСК ---
+  showScreen('home');
+});
+</script>
+
+</body>
+</html>
